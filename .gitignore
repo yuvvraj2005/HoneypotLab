@@ -20,3 +20,6 @@ keys/server.key
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Database
+*.db
