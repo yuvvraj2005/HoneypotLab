@@ -1,23 +1,63 @@
-import json
-from pathlib import Path
+from backend.app.core.database import SessionLocal
+from backend.app.models.attack import Attack
 
 
-LOG_FILE = Path(__file__).resolve().parents[3] / "logs" / "attacks.jsonl"
+def get_attacks(
+    limit: int = 100,
+    ip: str | None = None,
+    username: str | None = None,
+):
+    db = SessionLocal()
+
+    try:
+        query = db.query(Attack)
+
+        if ip:
+            query = query.filter(Attack.ip == ip)
+
+        if username:
+            query = query.filter(Attack.username == username)
+
+        attacks = (
+            query
+            .order_by(Attack.timestamp.desc())
+            .limit(limit)
+            .all()
+        )
+
+        return [
+            {
+                "timestamp": attack.timestamp,
+                "ip": attack.ip,
+                "username": attack.username,
+                "password": "[REDACTED]",
+            }
+            for attack in attacks
+        ]
+
+    finally:
+        db.close()
 
 
-def get_attacks():
-    attacks = []
+def get_attack_by_id(attack_id: int):
+    db = SessionLocal()
 
-    if not LOG_FILE.exists():
-        return attacks
+    try:
+        attack = (
+            db.query(Attack)
+            .filter(Attack.id == attack_id)
+            .first()
+        )
 
-    with LOG_FILE.open("r") as file:
-        for line in file:
-            if line.strip():
-                attack = json.loads(line)
+        if not attack:
+            return None
 
-                attack["password"] = "[REDACTED]"
+        return {
+            "timestamp": attack.timestamp,
+            "ip": attack.ip,
+            "username": attack.username,
+            "password": "[REDACTED]",
+        }
 
-                attacks.append(attack)
-
-    return attacks
+    finally:
+        db.close()

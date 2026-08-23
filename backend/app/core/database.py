@@ -1,8 +1,13 @@
+from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
-DATABASE_URL = "sqlite:///./honeypot.db"
+BASE_DIR = Path(__file__).resolve().parents[3]
+DATABASE_PATH = BASE_DIR / "database" / "honeypot.db"
+
+DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 
 engine = create_engine(
