@@ -7,6 +7,7 @@ import { AttacksTable } from '../components/AttacksTable';
 import { AttackDetailModal } from '../components/AttackDetailModal';
 import { FilterBar } from '../components/FilterBar';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { AlertsPanel } from '../components/AlertsPanel';
 import { useDashboard } from '../hooks/useDashboard';
 import { useAttackDetail } from '../hooks/useAttackDetail';
 import type { AttackFilters } from '../types';
@@ -87,6 +88,11 @@ export function Dashboard() {
         {/* Table */}
         <section aria-label="Recent attacks">
           <AttacksTable attacks={attacks} loading={loading} onSelectAttack={openAttack} />
+        </section>
+
+        {/* Alerts */}
+        <section aria-label="Security alerts">
+          <AlertsPanel refreshInterval={refreshInterval} />
         </section>
       </main>
 

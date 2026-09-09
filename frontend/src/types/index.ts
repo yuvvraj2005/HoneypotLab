@@ -32,3 +32,24 @@ export interface AttackFilters {
 }
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'checking';
+
+export interface Alert {
+  id: number;
+  timestamp: string;
+  session_id: string;
+  ip: string;
+  username: string;
+  command: string;
+  event_type: string;
+  severity: string;
+  description: string;
+  mitre_technique: string | null;
+  mitre_name: string | null;
+}
+
+export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface AlertFilters {
+  severity: string;
+  event_type: string;
+}
