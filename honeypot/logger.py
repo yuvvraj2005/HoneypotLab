@@ -7,6 +7,8 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.app.models.attack import Attack
 from backend.app.models.command_log import CommandLog
+from backend.app.models.alert import Alert
+from backend.app.services.detection_service import detect_command
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -15,6 +17,7 @@ LOG_FILE = BASE_DIR / "logs" / "attacks.jsonl"
 DATABASE_PATH = BASE_DIR / "database" / "honeypot.db"
 
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+
 
 engine = create_engine(
     DATABASE_URL,
@@ -55,6 +58,7 @@ def log_attack(ip, username, password):
     finally:
         db.close()
 
+
 def log_command(session_id, ip, username, command, output):
     timestamp = datetime.now().isoformat()
 
@@ -71,7 +75,7 @@ def log_command(session_id, ip, username, command, output):
     with LOG_FILE.open("a") as file:
         file.write(json.dumps(command_log) + "\n")
 
-    # Save to SQLite
+    # Save command to SQLite
     db = SessionLocal()
 
     try:
@@ -91,37 +95,35 @@ def log_command(session_id, ip, username, command, output):
         db.close()
 
 
-def log_command(session_id, ip, username, command, output):
-    timestamp = datetime.now().isoformat()
+    # Run detection engine
+    detection = detect_command(command)
 
-    command_log = {
-        "timestamp": timestamp,
-        "session_id": session_id,
-        "ip": ip,
-        "username": username,
-        "command": command,
-        "output": output,
-    }
+    if detection:
+        # Save alert to SQLite
+        db = SessionLocal()
 
-    # Save raw command evidence
-    with LOG_FILE.open("a") as file:
-        file.write(json.dumps(command_log) + "\n")
+        try:
+            alert = Alert(
+                timestamp=datetime.fromisoformat(timestamp),
+                session_id=session_id,
+                ip=ip,
+                username=username,
+                command=command,
+                event_type=detection["event_type"],
+                severity=detection["severity"],
+                description=detection["description"],
+            )
 
-    # Save to SQLite
-    db = SessionLocal()
+            db.add(alert)
+            db.commit()
 
-    try:
-        db_command = CommandLog(
-            timestamp=datetime.fromisoformat(timestamp),
-            session_id=session_id,
-            ip=ip,
-            username=username,
-            command=command,
-            output=output,
-        )
+        finally:
+            db.close()
 
-        db.add(db_command)
-        db.commit()
-
-    finally:
-        db.close()
+        # Display alert in terminal
+        print("\n🚨 DETECTION ALERT")
+        print(f"Event    : {detection['event_type']}")
+        print(f"Severity : {detection['severity']}")
+        print(f"Command  : {detection['command']}")
+        print(f"Details  : {detection['description']}")
+        print()
