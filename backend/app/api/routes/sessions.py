@@ -47,18 +47,31 @@ def get_session(
 
     return {
         "session_id": session_id,
-        "ip": commands[0].ip if commands else alerts[0].ip,
-        "username": commands[0].username if commands else alerts[0].username,
+
+        "ip": (
+            commands[0].ip
+            if commands
+            else alerts[0].ip
+        ),
+
+        "username": (
+            commands[0].username
+            if commands
+            else alerts[0].username
+        ),
+
         "start_time": (
             commands[0].timestamp
             if commands
             else alerts[0].timestamp
         ),
+
         "end_time": (
             commands[-1].timestamp
             if commands
             else alerts[-1].timestamp
         ),
+
         "commands": [
             {
                 "id": command.id,
@@ -68,6 +81,7 @@ def get_session(
             }
             for command in commands
         ],
+
         "alerts": [
             {
                 "id": alert.id,
@@ -76,6 +90,8 @@ def get_session(
                 "severity": alert.severity,
                 "command": alert.command,
                 "description": alert.description,
+                "mitre_technique": alert.mitre_technique,
+                "mitre_name": alert.mitre_name,
             }
             for alert in alerts
         ],

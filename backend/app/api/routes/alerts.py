@@ -61,6 +61,8 @@ def get_alerts(
             "event_type": alert.event_type,
             "severity": alert.severity,
             "description": alert.description,
+            "mitre_technique": alert.mitre_technique,
+            "mitre_name": alert.mitre_name,
         }
         for alert in alerts
     ]
@@ -92,4 +94,6 @@ def get_alert(
         "event_type": alert.event_type,
         "severity": alert.severity,
         "description": alert.description,
+        "mitre_technique": alert.mitre_technique,
+        "mitre_name": alert.mitre_name,
     }

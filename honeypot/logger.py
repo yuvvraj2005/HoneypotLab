@@ -96,7 +96,7 @@ def log_command(session_id, ip, username, command, output):
         db.add(db_command)
 
         if detection:
-            # Save alert
+            # Save alert with MITRE ATT&CK mapping
             alert = Alert(
                 timestamp=datetime.fromisoformat(timestamp),
                 session_id=session_id,
@@ -106,6 +106,8 @@ def log_command(session_id, ip, username, command, output):
                 event_type=detection["event_type"],
                 severity=detection["severity"],
                 description=detection["description"],
+                mitre_technique=detection.get("mitre_technique"),
+                mitre_name=detection.get("mitre_name"),
             )
 
             db.add(alert)
@@ -138,6 +140,7 @@ def log_command(session_id, ip, username, command, output):
         print("\n🚨 DETECTION ALERT")
         print(f"Event    : {detection['event_type']}")
         print(f"Severity : {detection['severity']}")
+        print(f"MITRE    : {detection['mitre_technique']} - {detection['mitre_name']}")
         print(f"Command  : {detection['command']}")
         print(f"Details  : {detection['description']}")
 
