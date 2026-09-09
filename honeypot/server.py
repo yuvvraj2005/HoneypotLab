@@ -8,6 +8,9 @@ class HoneypotServer(paramiko.ServerInterface):
     def __init__(self, ip):
         super().__init__()
         self.ip = ip
+        self.username = None
+        self.authenticated = False
+        self.pty_requested = False
 
     def get_allowed_auths(self, username):
         return "password"
@@ -27,4 +30,29 @@ class HoneypotServer(paramiko.ServerInterface):
 
         log_attack(self.ip, username, password)
 
-        return paramiko.AUTH_FAILED
+        self.username = username
+        self.authenticated = True
+
+        return paramiko.AUTH_SUCCESSFUL
+
+    def check_channel_pty_request(
+        self,
+        channel,
+        term,
+        width,
+        height,
+        pixelwidth,
+        pixelheight,
+        modes,
+    ):
+        self.pty_requested = True
+
+        print(
+            f"PTY requested: term={term}, "
+            f"size={width}x{height}"
+        )
+
+        return True
+
+    def check_channel_shell_request(self, channel):
+        return True

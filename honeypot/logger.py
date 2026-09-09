@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from backend.app.models.attack import Attack
+from backend.app.models.command_log import CommandLog
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -49,6 +50,77 @@ def log_attack(ip, username, password):
         )
 
         db.add(db_attack)
+        db.commit()
+
+    finally:
+        db.close()
+
+def log_command(session_id, ip, username, command, output):
+    timestamp = datetime.now().isoformat()
+
+    command_log = {
+        "timestamp": timestamp,
+        "session_id": session_id,
+        "ip": ip,
+        "username": username,
+        "command": command,
+        "output": output,
+    }
+
+    # Save raw command evidence
+    with LOG_FILE.open("a") as file:
+        file.write(json.dumps(command_log) + "\n")
+
+    # Save to SQLite
+    db = SessionLocal()
+
+    try:
+        db_command = CommandLog(
+            timestamp=datetime.fromisoformat(timestamp),
+            session_id=session_id,
+            ip=ip,
+            username=username,
+            command=command,
+            output=output,
+        )
+
+        db.add(db_command)
+        db.commit()
+
+    finally:
+        db.close()
+
+
+def log_command(session_id, ip, username, command, output):
+    timestamp = datetime.now().isoformat()
+
+    command_log = {
+        "timestamp": timestamp,
+        "session_id": session_id,
+        "ip": ip,
+        "username": username,
+        "command": command,
+        "output": output,
+    }
+
+    # Save raw command evidence
+    with LOG_FILE.open("a") as file:
+        file.write(json.dumps(command_log) + "\n")
+
+    # Save to SQLite
+    db = SessionLocal()
+
+    try:
+        db_command = CommandLog(
+            timestamp=datetime.fromisoformat(timestamp),
+            session_id=session_id,
+            ip=ip,
+            username=username,
+            command=command,
+            output=output,
+        )
+
+        db.add(db_command)
         db.commit()
 
     finally:
