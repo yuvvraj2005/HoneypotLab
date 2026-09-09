@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from backend.app.models.attack import Attack
 from backend.app.models.command_log import CommandLog
 from backend.app.models.alert import Alert
+from backend.app.models.ioc import IOC
 from backend.app.services.detection_service import detect_command
 
 
@@ -37,11 +38,11 @@ def log_attack(ip, username, password):
         "password": password,
     }
 
-    # Save raw evidence
+    # Save raw attack evidence
     with LOG_FILE.open("a") as file:
         file.write(json.dumps(attack) + "\n")
 
-    # Save to SQLite
+    # Save attack to SQLite
     db = SessionLocal()
 
     try:
@@ -75,10 +76,14 @@ def log_command(session_id, ip, username, command, output):
     with LOG_FILE.open("a") as file:
         file.write(json.dumps(command_log) + "\n")
 
-    # Save command to SQLite
+    # Run detection engine
+    detection = detect_command(command)
+
+    # Use one database session for command, alert, and IOC records
     db = SessionLocal()
 
     try:
+        # Save command
         db_command = CommandLog(
             timestamp=datetime.fromisoformat(timestamp),
             session_id=session_id,
@@ -89,20 +94,9 @@ def log_command(session_id, ip, username, command, output):
         )
 
         db.add(db_command)
-        db.commit()
 
-    finally:
-        db.close()
-
-
-    # Run detection engine
-    detection = detect_command(command)
-
-    if detection:
-        # Save alert to SQLite
-        db = SessionLocal()
-
-        try:
+        if detection:
+            # Save alert
             alert = Alert(
                 timestamp=datetime.fromisoformat(timestamp),
                 session_id=session_id,
@@ -115,15 +109,42 @@ def log_command(session_id, ip, username, command, output):
             )
 
             db.add(alert)
-            db.commit()
 
-        finally:
-            db.close()
+            # Save extracted IOCs
+            for ioc in detection.get("iocs", []):
+                db_ioc = IOC(
+                    timestamp=datetime.fromisoformat(timestamp),
+                    session_id=session_id,
+                    ip=ip,
+                    ioc_type=ioc["type"],
+                    value=ioc["value"],
+                    source_command=command,
+                )
 
-        # Display alert in terminal
+                db.add(db_ioc)
+
+        # Commit command, alert, and IOCs together
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    finally:
+        db.close()
+
+    # Display detection in terminal
+    if detection:
         print("\n🚨 DETECTION ALERT")
         print(f"Event    : {detection['event_type']}")
         print(f"Severity : {detection['severity']}")
         print(f"Command  : {detection['command']}")
         print(f"Details  : {detection['description']}")
+
+        if detection.get("iocs"):
+            print("IOCs:")
+
+            for ioc in detection["iocs"]:
+                print(f"  {ioc['type']} : {ioc['value']}")
+
         print()
