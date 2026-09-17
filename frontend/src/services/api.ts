@@ -11,7 +11,7 @@ import type {
   TimelineEntry,
 } from '../types';
 
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = (import.meta as any).env?.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
 
 async function apiFetch<T>(
   path: string,
