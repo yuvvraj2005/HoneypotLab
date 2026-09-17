@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+import bcrypt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -28,21 +29,39 @@ engine = create_engine(
 SessionLocal = sessionmaker(bind=engine)
 
 
+def _hash_password(plaintext: str) -> str:
+    """Return a bcrypt hash of the plaintext password.
+
+    bcrypt automatically generates a random salt per call, so identical
+    passwords produce different hashes.  The hash is intentionally slow
+    (work factor 12) to resist offline brute-force attacks.
+    """
+    return bcrypt.hashpw(
+        plaintext.encode("utf-8"),
+        bcrypt.gensalt(rounds=12),
+    ).decode("utf-8")
+
+
 def log_attack(ip, username, password):
     timestamp = datetime.now().isoformat()
 
-    attack = {
+    # Hash the captured password before any persistence.
+    # The plaintext is only ever held in memory for the duration of this call.
+    password_hash = _hash_password(password)
+
+    attack_record = {
         "timestamp": timestamp,
         "ip": ip,
         "username": username,
-        "password": password,
+        # Store a redacted marker in the log file – never the plaintext.
+        "password": "[CAPTURED]",
     }
 
-    # Save raw attack evidence
+    # Save raw attack evidence (no plaintext password)
     with LOG_FILE.open("a") as file:
-        file.write(json.dumps(attack) + "\n")
+        file.write(json.dumps(attack_record) + "\n")
 
-    # Save attack to SQLite
+    # Save attack to SQLite with the bcrypt hash
     db = SessionLocal()
 
     try:
@@ -50,7 +69,7 @@ def log_attack(ip, username, password):
             timestamp=datetime.fromisoformat(timestamp),
             ip=ip,
             username=username,
-            password=password,
+            password=password_hash,
         )
 
         db.add(db_attack)
