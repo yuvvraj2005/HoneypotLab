@@ -21,5 +21,6 @@ keys/server.key
 .DS_Store
 Thumbs.db
 
-# Database
+# Database – ignore the SQLite file but keep the directory tracked
+database/honeypot.db
 *.db
