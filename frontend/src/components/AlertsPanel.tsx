@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, ChevronDown, ChevronRight, ExternalLink, Filter, Shield, X } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, ExternalLink, Filter, Search, Shield, X } from 'lucide-react';
 import type { Alert, AlertFilters } from '../types';
 import { useAlerts } from '../hooks/useAlerts';
 
@@ -56,7 +56,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 
 // ─── Expandable row ───────────────────────────────────────────────────────────
 
-function AlertRow({ alert }: { alert: Alert }) {
+function AlertRow({ alert, onInvestigateSession }: { alert: Alert; onInvestigateSession: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = getSeverityConfig(alert.severity);
 
@@ -142,7 +142,18 @@ function AlertRow({ alert }: { alert: Alert }) {
           <td colSpan={8} className="px-6 pb-4 pt-2">
             <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               <DetailField label="Alert ID" value={String(alert.id)} mono />
-              <DetailField label="Session ID" value={alert.session_id} mono />
+              <div>
+                <p className="text-zinc-600 uppercase tracking-wider text-[10px] mb-0.5">Session ID</p>
+                <button
+                  id={`investigate-session-${alert.session_id}`}
+                  onClick={e => { e.stopPropagation(); onInvestigateSession(alert.session_id); }}
+                  className="flex items-center gap-1 text-xs font-mono text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2 py-0.5 rounded transition-colors"
+                  title={`Investigate session ${alert.session_id}`}
+                >
+                  <Search className="w-3 h-3 flex-shrink-0" />
+                  {alert.session_id}
+                </button>
+              </div>
               <DetailField label="Description" value={alert.description} />
               <DetailField label="Full Command" value={alert.command || '—'} mono />
               <DetailField
@@ -286,9 +297,10 @@ function SeveritySummary({ alerts }: { alerts: Alert[] }) {
 
 interface AlertsPanelProps {
   refreshInterval: number;
+  onInvestigateSession: (sessionId: string) => void;
 }
 
-export function AlertsPanel({ refreshInterval }: AlertsPanelProps) {
+export function AlertsPanel({ refreshInterval, onInvestigateSession }: AlertsPanelProps) {
   const [filters, setFilters] = useState<AlertFilters>({ severity: '', event_type: '' });
 
   const { alerts, loading, error, refresh } = useAlerts(filters, refreshInterval);
@@ -395,7 +407,7 @@ export function AlertsPanel({ refreshInterval }: AlertsPanelProps) {
                 </td>
               </tr>
             ) : (
-              displayed.map(alert => <AlertRow key={alert.id} alert={alert} />)
+              displayed.map(alert => <AlertRow key={alert.id} alert={alert} onInvestigateSession={onInvestigateSession} />)
             )}
           </tbody>
         </table>

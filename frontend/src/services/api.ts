@@ -4,6 +4,9 @@ import type {
   Attack,
   AttackFilters,
   HealthStatus,
+  Ioc,
+  IocFilters,
+  Session,
   Stats,
   TimelineEntry,
 } from '../types';
@@ -72,6 +75,19 @@ export const api = {
   },
 
   getSessionAlerts(sessionId: string): Promise<Alert[]> {
-    return apiFetch<Alert[]>(`/sessions/${sessionId}`);
+    return apiFetch<Alert[]>(`/sessions/${sessionId}/alerts`);
+  },
+
+  getSession(sessionId: string): Promise<Session> {
+    return apiFetch<Session>(`/sessions/${sessionId}`);
+  },
+
+  getIocs(filters?: Partial<IocFilters>): Promise<Ioc[]> {
+    const params: Record<string, string> = {};
+    if (filters?.ioc_type) params.ioc_type = filters.ioc_type;
+    if (filters?.session_id) params.session_id = filters.session_id;
+    if (filters?.ip) params.ip = filters.ip;
+    if (filters?.limit) params.limit = String(filters.limit);
+    return apiFetch<Ioc[]>('/iocs', params);
   },
 };

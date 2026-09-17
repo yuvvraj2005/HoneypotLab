@@ -8,6 +8,8 @@ import { AttackDetailModal } from '../components/AttackDetailModal';
 import { FilterBar } from '../components/FilterBar';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { AlertsPanel } from '../components/AlertsPanel';
+import { IocPanel } from '../components/IocPanel';
+import { SessionInvestigation } from '../components/SessionInvestigation';
 import { useDashboard } from '../hooks/useDashboard';
 import { useAttackDetail } from '../hooks/useAttackDetail';
 import type { AttackFilters } from '../types';
@@ -23,6 +25,7 @@ export function Dashboard() {
     useDashboard(filters, refreshInterval);
 
   const { selectedAttack, selectedIndex, openAttack, closeAttack } = useAttackDetail();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -92,12 +95,29 @@ export function Dashboard() {
 
         {/* Alerts */}
         <section aria-label="Security alerts">
-          <AlertsPanel refreshInterval={refreshInterval} />
+          <AlertsPanel
+            refreshInterval={refreshInterval}
+            onInvestigateSession={setSelectedSessionId}
+          />
+        </section>
+
+        {/* IOC Intelligence */}
+        <section aria-label="IOC Intelligence">
+          <IocPanel
+            refreshInterval={refreshInterval}
+            onInvestigateSession={setSelectedSessionId}
+          />
         </section>
       </main>
 
       {/* Attack detail modal */}
       <AttackDetailModal attack={selectedAttack} index={selectedIndex} onClose={closeAttack} />
+
+      {/* Session investigation drawer */}
+      <SessionInvestigation
+        sessionId={selectedSessionId}
+        onClose={() => setSelectedSessionId(null)}
+      />
     </div>
   );
 }
